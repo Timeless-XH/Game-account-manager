@@ -296,7 +296,7 @@ body {
 .toast {
     position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
     background: #2c2e33; color: #fff; padding: 10px 20px;
-    border-radius: 20px; font-size: 13px; z-index: 300;
+    border-radius: 20px; font-size: 13px; z-index: 10000;
     animation: toastIn 0.25s ease;
     pointer-events: none; white-space: nowrap;
     box-shadow: var(--shadow-lg);
@@ -331,9 +331,81 @@ body {
     text-align: center; padding: 40px 20px;
     color: var(--text-muted); grid-column: 1 / -1;
 }
+
+/* ── Login screen ── */
+.login-overlay {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #f0f2f8 0%, #e8ecf4 100%);
+    z-index: 9999; display: flex;
+    align-items: center; justify-content: center;
+}
+.login-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 40px 36px;
+    width: 380px; max-width: 92vw;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+}
+.login-logo {
+    width: 56px; height: 56px;
+    background: linear-gradient(135deg, #5b7fff, #8b5cf6);
+    border-radius: 16px; margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: #fff;
+}
+.login-card h2 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+.login-card .login-sub { font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; }
+.login-card input {
+    width: 100%; padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 16px; text-align: center;
+    letter-spacing: 4px; outline: none;
+    transition: var(--transition);
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+}
+.login-card input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+}
+.login-card .login-btn {
+    width: 100%; margin-top: 16px; padding: 12px;
+    border: none; border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #5b7fff, #6c5df7);
+    color: #fff; font-size: 15px; font-weight: 600;
+    cursor: pointer; transition: var(--transition);
+}
+.login-card .login-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.login-card .login-btn:disabled { opacity: 0.5; transform: none; }
+.login-error {
+    color: var(--danger); font-size: 12px;
+    margin-top: 8px; min-height: 18px;
+}
+.login-card .setup-hint {
+    margin-top: 16px; font-size: 12px; color: var(--text-muted);
+    border-top: 1px solid var(--border); padding-top: 14px;
+}
+.login-card .setup-hint a { color: var(--accent); cursor: pointer; text-decoration: none; }
+.login-card .setup-hint a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
+
+<!-- Login Screen -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+        <div class="login-logo">🎮</div>
+        <h2>游戏账号管理器</h2>
+        <p class="login-sub">请输入密码以解锁应用</p>
+        <input type="password" id="loginPassword" placeholder="输入密码" maxlength="20" onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="login-btn" id="loginBtn" onclick="doLogin()">🔓 解锁</button>
+        <div class="login-error" id="loginError"></div>
+        <div class="setup-hint" id="setupHint" style="display:none">
+            新设备？<a onclick="showNewDeviceSetup()">点此配置 Gist 同步</a>
+        </div>
+    </div>
+</div>
 
 <!-- Header -->
 <div class="header">
@@ -346,6 +418,7 @@ body {
         <button class="btn btn-sm" onclick="document.getElementById('importFile').click()" title="导入备份">📥 导入</button>
         <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
         <button class="btn btn-sm btn-danger" onclick="clearAll()" title="清空数据">🗑 清空</button>
+        <button class="btn btn-sm" onclick="lockApp()" title="锁定应用">🔒</button>
     </div>
 </div>
 
@@ -858,28 +931,48 @@ async function setupGist() {
             if (!resp.ok) throw new Error('Gist 不存在或无权限访问');
             showToast('✅ Gist 连接成功');
         } else {
-            // Create a new gist
-            const encrypted = await encryptData('[]', token);
-            const resp = await fetch('https://api.github.com/gists', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/vnd.github+json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    description: '🎮 Game Account Manager - encrypted backup',
-                    public: false,
-                    files: { 'game-accounts.enc': { content: encrypted } }
-                })
-            });
-            if (!resp.ok) {
-                const err = await resp.json();
-                throw new Error(err.message || '创建 Gist 失败');
+            // Try to find an existing Game Account Manager Gist
+            let foundGistId = null;
+            try {
+                const listResp = await fetch('https://api.github.com/gists?per_page=100', {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' }
+                });
+                if (listResp.ok) {
+                    const gists = await listResp.json();
+                    const found = gists.find(g =>
+                        g.description && g.description.includes('Game Account Manager')
+                    );
+                    if (found) foundGistId = found.id;
+                }
+            } catch(e) { /* listing failed, will create new */ }
+
+            if (foundGistId) {
+                gistConfig.gistId = foundGistId;
+                showToast('✅ 找到已有 Gist，已自动连接');
+            } else {
+                // Create a new gist
+                const encrypted = await encryptData('[]', token);
+                const resp = await fetch('https://api.github.com/gists', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/vnd.github+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        description: '🎮 Game Account Manager - encrypted backup',
+                        public: false,
+                        files: { 'game-accounts.enc': { content: encrypted } }
+                    })
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.message || '创建 Gist 失败');
+                }
+                const data = await resp.json();
+                gistConfig.gistId = data.id;
+                showToast('✅ Gist 创建成功！');
             }
-            const data = await resp.json();
-            gistConfig.gistId = data.id;
-            showToast('✅ Gist 创建成功！');
         }
 
         gistConfig.lastSync = new Date().toLocaleString();
@@ -1005,10 +1098,86 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+// ── Login / Password Gate ──
+const APP_PASSWORD = '510052';
+const SESSION_KEY = 'app-unlocked';
+
+function isUnlocked() {
+    return sessionStorage.getItem(SESSION_KEY) === 'true';
+}
+
+function lockApp() {
+    sessionStorage.removeItem(SESSION_KEY);
+    document.getElementById('loginOverlay').style.display = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginError').textContent = '';
+    document.getElementById('loginPassword').focus();
+}
+
+function doLogin() {
+    const input = document.getElementById('loginPassword');
+    const error = document.getElementById('loginError');
+    const btn = document.getElementById('loginBtn');
+
+    if (input.value === APP_PASSWORD) {
+        error.textContent = '';
+        sessionStorage.setItem(SESSION_KEY, 'true');
+        document.getElementById('loginOverlay').style.display = 'none';
+        initApp();
+    } else {
+        error.textContent = '❌ 密码错误';
+        input.value = '';
+        input.focus();
+        btn.style.transform = 'translateX(-3px)';
+        setTimeout(() => btn.style.transform = '', 150);
+    }
+}
+
+function showNewDeviceSetup() {
+    const token = prompt('请输入你的 GitHub Personal Token（需要 gist 权限）：\n\n此 Token 将加密后保存在本地，不会上传到任何第三方。');
+    if (!token) return;
+    if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
+        alert('Token 格式看起来不对。请从 https://github.com/settings/tokens 创建。');
+        return;
+    }
+    // Save token, user still needs to login with password
+    if (!gistConfig) gistConfig = {};
+    gistConfig.token = token;
+    saveGistConfig();
+    updateGistUI();
+    showToast('✅ Token 已保存，请输入密码解锁');
+
+    // If there's already a gistId from previous device, try to verify
+    if (gistConfig.gistId && !isUnlocked()) {
+        // Will connect after login
+    }
+}
+
 // ── Init ──
-loadData();
-loadGistConfig();
-renderAccounts();
+function initApp() {
+    loadData();
+    loadGistConfig();
+
+    // If Gist is configured but it's a new device, show setup hint
+    if (!gistConfig || !gistConfig.gistId) {
+        document.getElementById('setupHint').style.display = '';
+    }
+
+    renderAccounts();
+}
+
+// Check login on load
+if (isUnlocked()) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    initApp();
+} else {
+    // Pre-load gist config so login screen can show setup hint
+    loadGistConfig();
+    if (!gistConfig || !gistConfig.token || !gistConfig.gistId) {
+        document.getElementById('setupHint').style.display = '';
+    }
+    document.getElementById('loginPassword').focus();
+}
 </script>
 </body>
 </html>
