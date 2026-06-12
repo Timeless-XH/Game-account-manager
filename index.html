@@ -714,6 +714,14 @@ function closeModalOutside(e) {
     if (e.target === document.getElementById('modalOverlay')) closeModal();
 }
 
+// ── Gist sync prompt after data changes ──
+async function promptGistSync() {
+    if (!gistConfig || !gistConfig.token || !gistConfig.gistId) return;
+    if (confirm('数据已变更，是否上传到 Gist 云端？')) {
+        await syncToGist();
+    }
+}
+
 function saveAccount() {
     const game = document.getElementById('inputGame').value.trim();
     const account = document.getElementById('inputAccount').value.trim();
@@ -743,6 +751,7 @@ function saveAccount() {
     closeModal();
     renderAccounts();
     showToast(editId ? '✅ 账号已更新' : '✅ 账号已添加');
+    promptGistSync();
 }
 
 function editAccount(id) {
@@ -755,6 +764,7 @@ function deleteAccount(id) {
     saveData();
     renderAccounts();
     showToast('🗑 账号已删除');
+    promptGistSync();
 }
 
 function clearAll() {
@@ -763,6 +773,7 @@ function clearAll() {
     saveData();
     renderAccounts();
     showToast('🗑 所有数据已清空');
+    promptGistSync();
 }
 
 // ── Export / Import ──
@@ -799,6 +810,7 @@ function importData(event) {
             saveData();
             renderAccounts();
             showToast(`📥 成功导入 ${count} 条记录`);
+            promptGistSync();
         } catch(err) {
             showToast('⚠️ 文件格式不正确');
         }
