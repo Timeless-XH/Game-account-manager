@@ -2,7 +2,10 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f5f6f8">
 <title>游戏账号管理器</title>
 <script src="https://unpkg.com/pinyin-pro/dist/index.js"></script>
 <style>
@@ -41,6 +44,12 @@ body {
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior: none;
+}
+
+*:focus-visible {
+    outline: 2.5px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 3px;
 }
 
 /* ── Header ── */
@@ -176,8 +185,8 @@ body {
     display: flex; gap: 2px; flex-shrink: 0; margin-left: 8px;
 }
 .card-actions button {
-    width: 30px; height: 30px; border: none; background: none;
-    border-radius: 6px; cursor: pointer; font-size: 14px;
+    min-width: 44px; min-height: 44px; border: none; background: none;
+    border-radius: 6px; cursor: pointer; font-size: 16px;
     color: var(--text-muted); transition: var(--transition);
     display: flex; align-items: center; justify-content: center;
 }
@@ -207,11 +216,11 @@ body {
     letter-spacing: 3px;
 }
 .copy-btn, .toggle-btn {
-    flex-shrink: 0; width: 30px; height: 30px;
+    flex-shrink: 0; min-width: 44px; min-height: 44px;
     border: 1px solid var(--border);
     background: var(--surface);
     border-radius: 6px; cursor: pointer;
-    font-size: 13px; transition: var(--transition);
+    font-size: 15px; transition: var(--transition);
     display: flex; align-items: center; justify-content: center;
     color: var(--text-secondary);
 }
@@ -306,6 +315,15 @@ body {
 }
 @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
 /* ── Settings panel ── */
 .settings-section {
     margin-top: 28px;
@@ -356,13 +374,7 @@ body {
     .card-header { margin-bottom: 10px; }
     .game-name { font-size: 14px; }
 
-    /* Bigger touch targets for copy/toggle */
-    .copy-btn, .toggle-btn {
-        width: 36px; height: 36px; border-radius: 8px; font-size: 15px;
-    }
-    .card-actions button {
-        width: 36px; height: 36px; border-radius: 8px; font-size: 16px;
-    }
+    /* Touch targets already 44px at base — mobile just adjusts spacing */
     .field-row {
         padding: 8px 10px; gap: 6px; font-size: 13px;
     }
@@ -572,7 +584,7 @@ body {
         <button class="btn btn-sm" onclick="document.getElementById('importFile').click()" title="导入备份">📥 导入</button>
         <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
         <button class="btn btn-sm btn-danger" onclick="clearAll()" title="清空数据">🗑 清空</button>
-        <button class="btn btn-sm" onclick="lockApp()" title="锁定应用">🔒</button>
+        <button class="btn btn-sm" onclick="lockApp()" title="锁定应用" aria-label="锁定应用">🔒</button>
     </div>
 </div>
 
@@ -599,7 +611,7 @@ body {
         <span class="search-icon">🔍</span>
         <input type="text" id="searchInput" placeholder="搜索游戏名 / 账号 / 备注（支持拼音、部分匹配）..." oninput="renderAccounts()">
         <span class="search-hint" id="searchHint"></span>
-        <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+        <button class="search-clear" id="searchClear" onclick="clearSearch()" aria-label="清除搜索">✕</button>
     </div>
 
     <!-- Account Grid -->
@@ -722,20 +734,20 @@ function renderAccounts() {
             <div class="card-header">
                 <span class="game-name">${escapeHtml(acc.game)}${notesHtml}</span>
                 <div class="card-actions">
-                    <button onclick="editAccount('${acc.id}')" title="编辑">✏️</button>
-                    <button class="danger" onclick="deleteAccount('${acc.id}')" title="删除">🗑</button>
+                    <button onclick="editAccount('${acc.id}')" title="编辑" aria-label="编辑">✏️</button>
+                    <button class="danger" onclick="deleteAccount('${acc.id}')" title="删除" aria-label="删除">🗑</button>
                 </div>
             </div>
             <div class="field-row">
                 <span class="field-label">账号</span>
                 <span class="field-value" id="acc-${acc.id}">${escapeHtml(acc.account)}</span>
-                <button class="copy-btn" onclick="copyText('${acc.id}','account')" title="复制账号">📋</button>
+                <button class="copy-btn" onclick="copyText('${acc.id}','account')" title="复制账号" aria-label="复制账号">📋</button>
             </div>
             <div class="field-row">
                 <span class="field-label">密码</span>
                 <span class="field-value pw-hidden" id="pw-${acc.id}">••••••••</span>
-                <button class="toggle-btn" onclick="togglePassword('${acc.id}')" title="显示/隐藏" id="toggle-${acc.id}">👁</button>
-                <button class="copy-btn" onclick="copyPassword('${acc.id}')" title="复制密码">📋</button>
+                <button class="toggle-btn" onclick="togglePassword('${acc.id}')" title="显示密码" aria-label="显示密码" id="toggle-${acc.id}">👁</button>
+                <button class="copy-btn" onclick="copyPassword('${acc.id}')" title="复制密码" aria-label="复制密码">📋</button>
                 <span style="display:none" id="pw-real-${acc.id}">${escapeHtml(acc.password)}</span>
             </div>
         </div>`;
