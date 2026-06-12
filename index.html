@@ -1081,6 +1081,35 @@ async function loadFromGist() {
     btnPull.disabled = false;
 }
 
+// Silent auto-load from Gist on startup (no prompts, no toasts)
+async function autoLoadFromGist() {
+    if (!gistConfig || !gistConfig.token || !gistConfig.gistId) return;
+    try {
+        const resp = await fetch(`https://api.github.com/gists/${gistConfig.gistId}`, {
+            headers: { 'Authorization': `Bearer ${gistConfig.token}`, 'Accept': 'application/vnd.github+json' }
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const file = data.files && data.files['game-accounts.enc'];
+        if (!file || !file.content) return;
+
+        const decrypted = await decryptData(file.content, gistConfig.token);
+        const remoteAccounts = JSON.parse(decrypted);
+        if (!Array.isArray(remoteAccounts)) return;
+
+        // Only update if cloud data differs from local
+        if (JSON.stringify(remoteAccounts) === JSON.stringify(accounts)) return;
+
+        accounts = remoteAccounts;
+        saveData();
+        renderAccounts();
+        gistConfig.lastSync = new Date().toLocaleString();
+        saveGistConfig();
+        updateGistUI();
+        showToast(`📥 已自动同步云端数据（${remoteAccounts.length} 条）`);
+    } catch(e) { /* silent fail, keep local data */ }
+}
+
 // ── Toast ──
 function showToast(msg) {
     const container = document.getElementById('toastContainer');
@@ -1176,6 +1205,7 @@ function initApp() {
     }
 
     renderAccounts();
+    autoLoadFromGist(); // silently sync latest cloud data on startup
 }
 
 // Check login on load
