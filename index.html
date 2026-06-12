@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>游戏账号管理器</title>
+<script src="https://unpkg.com/pinyin-pro/dist/index.js"></script>
+<style>
+:root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-hover: #f8f9fb;
+    --border: #e8eaef;
+    --text: #2c2e33;
+    --text-secondary: #868e9b;
+    --text-muted: #b0b5be;
+    --accent: #5b7fff;
+    --accent-light: #eef1ff;
+    --accent-hover: #4a6eef;
+    --danger: #f56c6c;
+    --danger-light: #fef0f0;
+    --success: #67c23a;
+    --success-light: #f0f9eb;
+    --warning: #e6a23c;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.06);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,0.10);
+    --radius-sm: 8px;
+    --radius: 12px;
+    --radius-lg: 16px;
+    --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ── Header ── */
+.header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+    background: rgba(255,255,255,0.88);
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logo {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, #5b7fff, #8b5cf6);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 16px;
+}
+.header h1 { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+.header-right { display: flex; gap: 8px; }
+
+/* ── Main ── */
+.container { max-width: 960px; margin: 0 auto; padding: 24px 16px 100px; }
+
+/* ── Stats bar ── */
+.stats-bar {
+    display: flex; gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+.stat-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 14px 20px;
+    box-shadow: var(--shadow-sm);
+    display: flex; align-items: center; gap: 12px;
+    flex: 1; min-width: 120px;
+    border: 1px solid var(--border);
+}
+.stat-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+}
+.stat-icon.games { background: #eef1ff; color: #5b7fff; }
+.stat-icon.accounts { background: #f0f9eb; color: #67c23a; }
+.stat-icon.notes { background: #fdf6ec; color: #e6a23c; }
+.stat-num { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+.stat-label { font-size: 12px; color: var(--text-secondary); }
+
+/* ── Search ── */
+.search-wrap {
+    position: relative;
+    margin-bottom: 20px;
+}
+.search-wrap input {
+    width: 100%; height: 48px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0 48px 0 44px;
+    font-size: 15px;
+    color: var(--text);
+    background: var(--surface);
+    transition: var(--transition);
+    outline: none;
+}
+.search-wrap input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+}
+.search-wrap input::placeholder { color: var(--text-muted); }
+.search-icon {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 17px;
+}
+.search-clear {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    width: 36px; height: 36px; border: none; background: none;
+    color: var(--text-muted); cursor: pointer; border-radius: 50%;
+    display: none; align-items: center; justify-content: center;
+    font-size: 18px; transition: var(--transition);
+}
+.search-clear:hover { background: #f0f0f0; color: var(--text); }
+.search-clear.visible { display: flex; }
+.search-hint {
+    position: absolute; right: 50px; top: 50%; transform: translateY(-50%);
+    font-size: 11px; color: var(--text-muted);
+    pointer-events: none;
+}
+
+/* ── Account cards ── */
+.account-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+}
+.account-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    border: 1px solid var(--border);
+    transition: var(--transition);
+    position: relative;
+    box-shadow: var(--shadow-sm);
+}
+.account-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: #d5d8e0;
+    transform: translateY(-1px);
+}
+.card-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 12px;
+}
+.game-name {
+    font-weight: 600; font-size: 15px;
+    color: var(--text);
+    word-break: break-all;
+}
+.game-name .notes-text {
+    font-weight: 400; font-size: 12px;
+    color: var(--text-secondary);
+    margin-left: 2px;
+}
+.card-actions {
+    display: flex; gap: 2px; flex-shrink: 0; margin-left: 8px;
+}
+.card-actions button {
+    width: 30px; height: 30px; border: none; background: none;
+    border-radius: 6px; cursor: pointer; font-size: 14px;
+    color: var(--text-muted); transition: var(--transition);
+    display: flex; align-items: center; justify-content: center;
+}
+.card-actions button:hover { background: #f0f0f0; color: var(--text); }
+.card-actions button.danger:hover { background: var(--danger-light); color: var(--danger); }
+
+.field-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    background: #f8f9fb;
+    border-radius: var(--radius-sm);
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+.field-label {
+    color: var(--text-secondary); font-size: 11px;
+    white-space: nowrap; min-width: 28px;
+    font-weight: 500;
+}
+.field-value {
+    flex: 1; word-break: break-all;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 13px;
+}
+.field-value.pw-hidden {
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    letter-spacing: 3px;
+}
+.copy-btn, .toggle-btn {
+    flex-shrink: 0; width: 30px; height: 30px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 6px; cursor: pointer;
+    font-size: 13px; transition: var(--transition);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-secondary);
+}
+.copy-btn:hover, .toggle-btn:hover { background: #f0f0f0; border-color: #c5c8d0; }
+.copy-btn.copied { background: var(--success-light); border-color: var(--success); color: var(--success); }
+
+/* ── Empty state ── */
+.empty-state {
+    text-align: center; padding: 60px 20px; color: var(--text-muted);
+}
+.empty-state .empty-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.6; }
+.empty-state p { font-size: 14px; margin-bottom: 4px; }
+.empty-state .sub { font-size: 12px; color: var(--text-muted); }
+
+/* ── Buttons ── */
+.btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); transition: var(--transition);
+    white-space: nowrap; text-decoration: none;
+    height: 36px;
+}
+.btn:hover { background: var(--surface-hover); border-color: #c5c8d0; }
+.btn-primary {
+    background: var(--accent); color: #fff; border: none;
+    font-weight: 600;
+}
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-danger { color: var(--danger); }
+.btn-danger:hover { background: var(--danger-light); border-color: var(--danger); }
+.btn-sm { padding: 5px 10px; font-size: 12px; height: 28px; }
+
+/* ── FAB ── */
+.fab {
+    position: fixed; bottom: 28px; right: 28px;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(135deg, #5b7fff, #6c5df7);
+    color: #fff; border: none; cursor: pointer;
+    font-size: 24px; box-shadow: 0 4px 16px rgba(91,127,255,0.35);
+    transition: var(--transition);
+    z-index: 90; display: flex; align-items: center; justify-content: center;
+}
+.fab:hover { transform: scale(1.06); box-shadow: 0 6px 24px rgba(91,127,255,0.45); }
+
+/* ── Modal ── */
+.modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+    z-index: 200; display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 0.15s ease;
+    backdrop-filter: blur(4px);
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal {
+    background: var(--surface); border-radius: var(--radius-lg);
+    padding: 28px; width: 460px; max-width: 92vw;
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 0.2s ease;
+}
+@keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal h2 { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+.form-group { margin-bottom: 16px; }
+.form-group label {
+    display: block; font-size: 13px; font-weight: 500;
+    color: var(--text-secondary); margin-bottom: 6px;
+}
+.form-group input, .form-group textarea {
+    width: 100%; padding: 10px 14px;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 14px; color: var(--text); outline: none;
+    transition: var(--transition); font-family: inherit;
+    background: #fafbfc;
+    resize: vertical;
+}
+.form-group input:focus, .form-group textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+    background: var(--surface);
+}
+.form-group textarea { min-height: 60px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+/* ── Toast ── */
+.toast {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+    background: #2c2e33; color: #fff; padding: 10px 20px;
+    border-radius: 20px; font-size: 13px; z-index: 300;
+    animation: toastIn 0.25s ease;
+    pointer-events: none; white-space: nowrap;
+    box-shadow: var(--shadow-lg);
+}
+@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* ── Settings panel ── */
+.settings-section {
+    margin-top: 28px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 20px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+.settings-section h3 { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+.settings-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+    .header { padding: 0 12px; }
+    .header h1 { font-size: 15px; }
+    .account-grid { grid-template-columns: 1fr; }
+    .container { padding: 16px 10px 100px; }
+    .modal { padding: 20px; }
+    .stats-bar { gap: 8px; }
+    .stat-card { padding: 10px 14px; }
+}
+
+/* ── No results ── */
+.no-results {
+    text-align: center; padding: 40px 20px;
+    color: var(--text-muted); grid-column: 1 / -1;
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div class="header-left">
+        <div class="logo">🎮</div>
+        <h1>游戏账号管理器</h1>
+    </div>
+    <div class="header-right">
+        <button class="btn btn-sm" onclick="exportData()" title="导出备份">📤 导出</button>
+        <button class="btn btn-sm" onclick="document.getElementById('importFile').click()" title="导入备份">📥 导入</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+        <button class="btn btn-sm btn-danger" onclick="clearAll()" title="清空数据">🗑 清空</button>
+    </div>
+</div>
+
+<!-- Main -->
+<div class="container">
+    <!-- Stats -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-icon games">🎮</div>
+            <div><div class="stat-num" id="statGames">0</div><div class="stat-label">游戏数量</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon accounts">👤</div>
+            <div><div class="stat-num" id="statAccounts">0</div><div class="stat-label">账号总数</div></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon notes">📝</div>
+            <div><div class="stat-num" id="statNotes">0</div><div class="stat-label">含备注账号</div></div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="搜索游戏名 / 账号 / 备注（支持拼音、部分匹配）..." oninput="renderAccounts()">
+        <span class="search-hint" id="searchHint"></span>
+        <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+    </div>
+
+    <!-- Account Grid -->
+    <div class="account-grid" id="accountGrid"></div>
+
+    <!-- Settings -->
+    <div class="settings-section">
+        <h3>☁️ GitHub Gist 云端同步</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
+            数据会使用 AES-GCM 加密后存储到你的 GitHub Gist，即使 Gist 被公开也无法读取。
+        </p>
+        <div class="settings-row" style="align-items:flex-end;">
+            <div style="flex:1;min-width:200px;">
+                <label style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px;">GitHub Personal Token</label>
+                <input type="password" id="gistToken" placeholder="ghp_xxxxxxxxxxxx" style="width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;outline:none;font-family:monospace;" onfocus="this.style.borderColor='#5b7fff'" onblur="this.style.borderColor=''">
+            </div>
+            <button class="btn btn-sm btn-primary" onclick="setupGist()" id="btnGistSetup">🔗 连接 Gist</button>
+            <button class="btn btn-sm" onclick="syncToGist()" id="btnGistPush" style="display:none;">📤 上传</button>
+            <button class="btn btn-sm" onclick="loadFromGist()" id="btnGistPull" style="display:none;">📥 下载</button>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:var(--text-muted);" id="cloudStatus">状态：未配置</div>
+        <div style="margin-top:4px;font-size:11px;color:var(--text-muted);">
+            Token 需要 <code>gist</code> 权限。在 <a href="https://github.com/settings/tokens" target="_blank" style="color:var(--accent);">GitHub Settings → Tokens</a> 创建。
+        </div>
+    </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="openModal()" title="添加账号">+</button>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="closeModalOutside(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+        <h2 id="modalTitle">添加账号</h2>
+        <div class="form-group">
+            <label>🎮 游戏名称 *</label>
+            <input type="text" id="inputGame" placeholder="例如：原神 / Genshin Impact">
+        </div>
+        <div class="form-group">
+            <label>👤 账号 *</label>
+            <input type="text" id="inputAccount" placeholder="用户名 / 邮箱 / 手机号">
+        </div>
+        <div class="form-group">
+            <label>🔑 密码 *</label>
+            <input type="text" id="inputPassword" placeholder="账号密码">
+        </div>
+        <div class="form-group">
+            <label>📝 备注</label>
+            <textarea id="inputNotes" placeholder="区服、角色名、绑定信息等（可选）"></textarea>
+        </div>
+        <input type="hidden" id="inputEditId" value="">
+        <div class="modal-actions">
+            <button class="btn" onclick="closeModal()">取消</button>
+            <button class="btn btn-primary" onclick="saveAccount()">💾 保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- Gist sync is configured in the settings section above -->
+
+<!-- Toast container -->
+<div id="toastContainer"></div>
+
+<script>
+// ── Data Store ──
+const STORAGE_KEY = 'game-accounts-data';
+let accounts = [];
+let editingId = null;
+
+function loadData() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        accounts = raw ? JSON.parse(raw) : [];
+    } catch(e) { accounts = []; }
+}
+function saveData() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+}
+
+// ── Render ──
+function renderAccounts() {
+    const query = document.getElementById('searchInput').value.trim().toLowerCase();
+    const grid = document.getElementById('accountGrid');
+    const clearBtn = document.getElementById('searchClear');
+    const hint = document.getElementById('searchHint');
+
+    clearBtn.classList.toggle('visible', query.length > 0);
+
+    let filtered = accounts;
+    if (query) {
+        filtered = accounts.filter(acc => matchesQuery(acc, query));
+        hint.textContent = `${filtered.length} / ${accounts.length}`;
+    } else {
+        hint.textContent = '';
+    }
+
+    updateStats(filtered);
+
+    if (accounts.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state" style="grid-column:1/-1">
+                <div class="empty-icon">🎮</div>
+                <p>还没有添加任何账号</p>
+                <p class="sub">点击右下角的 + 按钮添加你的第一个游戏账号</p>
+            </div>`;
+        return;
+    }
+
+    if (filtered.length === 0) {
+        grid.innerHTML = `<div class="no-results">🔍 没有找到匹配的账号</div>`;
+        return;
+    }
+
+    grid.innerHTML = filtered.map((acc, i) => {
+        const notesHtml = acc.notes
+            ? `<span class="notes-text">（${escapeHtml(acc.notes)}）</span>`
+            : '';
+        return `
+        <div class="account-card">
+            <div class="card-header">
+                <span class="game-name">${escapeHtml(acc.game)}${notesHtml}</span>
+                <div class="card-actions">
+                    <button onclick="editAccount('${acc.id}')" title="编辑">✏️</button>
+                    <button class="danger" onclick="deleteAccount('${acc.id}')" title="删除">🗑</button>
+                </div>
+            </div>
+            <div class="field-row">
+                <span class="field-label">账号</span>
+                <span class="field-value" id="acc-${acc.id}">${escapeHtml(acc.account)}</span>
+                <button class="copy-btn" onclick="copyText('${acc.id}','account')" title="复制账号">📋</button>
+            </div>
+            <div class="field-row">
+                <span class="field-label">密码</span>
+                <span class="field-value pw-hidden" id="pw-${acc.id}">••••••••</span>
+                <button class="toggle-btn" onclick="togglePassword('${acc.id}')" title="显示/隐藏" id="toggle-${acc.id}">👁</button>
+                <button class="copy-btn" onclick="copyPassword('${acc.id}')" title="复制密码">📋</button>
+                <span style="display:none" id="pw-real-${acc.id}">${escapeHtml(acc.password)}</span>
+            </div>
+        </div>`;
+    }).join('');
+
+    // save original indices for copy operations
+    window._filteredAccounts = filtered;
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function updateStats(filtered) {
+    document.getElementById('statGames').textContent = new Set(accounts.map(a => a.game)).size;
+    document.getElementById('statAccounts').textContent = accounts.length;
+    document.getElementById('statNotes').textContent = accounts.filter(a => a.notes).length;
+}
+
+// ── Search with pinyin ──
+function matchesQuery(acc, query) {
+    // Direct match in game, account, notes
+    const fields = [acc.game, acc.account, acc.notes].filter(Boolean).map(f => f.toLowerCase());
+    if (fields.some(f => f.includes(query))) return true;
+
+    // Pinyin match for game name (Chinese chars)
+    if (typeof pinyinPro !== 'undefined' && /[\u4e00-\u9fff]/.test(acc.game)) {
+        try {
+            const pyFull = pinyinPro.pinyin(acc.game, { toneType: 'none', type: 'array' }).join('').toLowerCase();
+            const pyFirst = pinyinPro.pinyin(acc.game, { pattern: 'first', toneType: 'none', type: 'array' }).join('').toLowerCase();
+            if (pyFull.includes(query) || pyFirst.includes(query)) return true;
+
+            // Also try pinyin for notes if they contain Chinese
+            if (acc.notes && /[\u4e00-\u9fff]/.test(acc.notes)) {
+                const npFull = pinyinPro.pinyin(acc.notes, { toneType: 'none', type: 'array' }).join('').toLowerCase();
+                if (npFull.includes(query)) return true;
+            }
+        } catch(e) { /* pinyin not available */ }
+    }
+
+    return false;
+}
+
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    renderAccounts();
+    document.getElementById('searchInput').focus();
+}
+
+// ── Copy ──
+async function copyText(id, field) {
+    const acc = accounts.find(a => a.id === id);
+    if (!acc) return;
+    const text = field === 'account' ? acc.account : acc.password;
+    await navigator.clipboard.writeText(text);
+    showToast('✅ 已复制' + (field === 'account' ? '账号' : '密码'));
+
+    // Flash the copy button
+    const el = document.getElementById('acc-' + id);
+    if (el && field === 'account') {
+        const btn = el.parentElement.querySelector('.copy-btn');
+        btn.classList.add('copied');
+        setTimeout(() => btn.classList.remove('copied'), 600);
+    }
+}
+
+async function copyPassword(id) {
+    const acc = accounts.find(a => a.id === id);
+    if (!acc) return;
+    await navigator.clipboard.writeText(acc.password);
+    showToast('✅ 已复制密码');
+    // Flash first copy button in the pw row
+    const pwEl = document.getElementById('pw-' + id);
+    if (pwEl) {
+        const btn = pwEl.parentElement.querySelector('.copy-btn');
+        btn.classList.add('copied');
+        setTimeout(() => btn.classList.remove('copied'), 600);
+    }
+}
+
+function togglePassword(id) {
+    const pwEl = document.getElementById('pw-' + id);
+    const realEl = document.getElementById('pw-real-' + id);
+    const toggleBtn = document.getElementById('toggle-' + id);
+    if (!pwEl || !realEl) return;
+
+    if (pwEl.classList.contains('pw-hidden')) {
+        pwEl.textContent = realEl.textContent;
+        pwEl.classList.remove('pw-hidden');
+        toggleBtn.textContent = '🙈';
+    } else {
+        pwEl.textContent = '••••••••';
+        pwEl.classList.add('pw-hidden');
+        toggleBtn.textContent = '👁';
+    }
+}
+
+// ── CRUD ──
+function openModal(editId) {
+    editingId = editId || null;
+    document.getElementById('modalTitle').textContent = editId ? '编辑账号' : '添加账号';
+    document.getElementById('inputGame').value = '';
+    document.getElementById('inputAccount').value = '';
+    document.getElementById('inputPassword').value = '';
+    document.getElementById('inputNotes').value = '';
+    document.getElementById('inputEditId').value = '';
+
+    if (editId) {
+        const acc = accounts.find(a => a.id === editId);
+        if (acc) {
+            document.getElementById('inputGame').value = acc.game;
+            document.getElementById('inputAccount').value = acc.account;
+            document.getElementById('inputPassword').value = acc.password;
+            document.getElementById('inputNotes').value = acc.notes || '';
+            document.getElementById('inputEditId').value = editId;
+        }
+    }
+    document.getElementById('modalOverlay').style.display = 'flex';
+    document.getElementById('inputGame').focus();
+}
+
+function closeModal() {
+    document.getElementById('modalOverlay').style.display = 'none';
+    editingId = null;
+}
+
+function closeModalOutside(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function saveAccount() {
+    const game = document.getElementById('inputGame').value.trim();
+    const account = document.getElementById('inputAccount').value.trim();
+    const password = document.getElementById('inputPassword').value.trim();
+    const notes = document.getElementById('inputNotes').value.trim();
+    const editId = document.getElementById('inputEditId').value;
+
+    if (!game || !account || !password) {
+        showToast('⚠️ 游戏名、账号、密码不能为空');
+        return;
+    }
+
+    if (editId) {
+        const idx = accounts.findIndex(a => a.id === editId);
+        if (idx >= 0) {
+            accounts[idx] = { ...accounts[idx], game, account, password, notes };
+        }
+    } else {
+        accounts.push({
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+            game, account, password, notes,
+            createdAt: new Date().toISOString()
+        });
+    }
+
+    saveData();
+    closeModal();
+    renderAccounts();
+    showToast(editId ? '✅ 账号已更新' : '✅ 账号已添加');
+}
+
+function editAccount(id) {
+    openModal(id);
+}
+
+function deleteAccount(id) {
+    if (!confirm('确定要删除这个账号吗？此操作不可恢复。')) return;
+    accounts = accounts.filter(a => a.id !== id);
+    saveData();
+    renderAccounts();
+    showToast('🗑 账号已删除');
+}
+
+function clearAll() {
+    if (!confirm('确定要清空所有账号数据吗？\n\n建议先导出备份！此操作不可恢复。')) return;
+    accounts = [];
+    saveData();
+    renderAccounts();
+    showToast('🗑 所有数据已清空');
+}
+
+// ── Export / Import ──
+function exportData() {
+    const data = JSON.stringify(accounts, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `game-accounts-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('📤 数据已导出');
+}
+
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!Array.isArray(data)) throw new Error('Invalid format');
+            const count = data.length;
+            // Merge: replace accounts with same id, add new ones
+            const existingIds = new Set(accounts.map(a => a.id));
+            const newAccounts = data.filter(a => !existingIds.has(a.id));
+            const updatedAccounts = accounts.map(a => {
+                const found = data.find(d => d.id === a.id);
+                return found || a;
+            });
+            const merged = [...updatedAccounts, ...newAccounts];
+            accounts = merged;
+            saveData();
+            renderAccounts();
+            showToast(`📥 成功导入 ${count} 条记录`);
+        } catch(err) {
+            showToast('⚠️ 文件格式不正确');
+        }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+}
+
+// ── GitHub Gist Sync ──
+const GIST_CONFIG_KEY = 'gist-config';
+let gistConfig = null;
+
+function loadGistConfig() {
+    try {
+        const raw = localStorage.getItem(GIST_CONFIG_KEY);
+        gistConfig = raw ? JSON.parse(raw) : null;
+    } catch(e) { gistConfig = null; }
+    updateGistUI();
+}
+
+function saveGistConfig() {
+    if (gistConfig) {
+        localStorage.setItem(GIST_CONFIG_KEY, JSON.stringify(gistConfig));
+    } else {
+        localStorage.removeItem(GIST_CONFIG_KEY);
+    }
+}
+
+function updateGistUI() {
+    const tokenInput = document.getElementById('gistToken');
+    const btnSetup = document.getElementById('btnGistSetup');
+    const btnPush = document.getElementById('btnGistPush');
+    const btnPull = document.getElementById('btnGistPull');
+    const statusEl = document.getElementById('cloudStatus');
+
+    if (gistConfig && gistConfig.gistId) {
+        tokenInput.value = gistConfig.token || '';
+        btnSetup.textContent = '🔄 更新';
+        btnPush.style.display = '';
+        btnPull.style.display = '';
+        statusEl.innerHTML = `✅ 已连接 Gist <code style="font-size:11px;">${gistConfig.gistId.slice(0,8)}...</code> | 上次同步：${gistConfig.lastSync || '从未'}`;
+        statusEl.style.color = 'var(--success)';
+    } else if (gistConfig && !gistConfig.gistId) {
+        tokenInput.value = gistConfig.token || '';
+        btnSetup.textContent = '🔗 创建 Gist';
+        btnPush.style.display = 'none';
+        btnPull.style.display = 'none';
+        statusEl.textContent = '已保存 Token，点击「创建 Gist」建立连接';
+        statusEl.style.color = 'var(--warning)';
+        statusEl.innerHTML = statusEl.textContent;
+    } else {
+        tokenInput.value = '';
+        btnSetup.textContent = '🔗 连接 Gist';
+        btnPush.style.display = 'none';
+        btnPull.style.display = 'none';
+        statusEl.textContent = '状态：未配置';
+        statusEl.style.color = 'var(--text-muted)';
+    }
+}
+
+// ── Encryption helpers (AES-GCM via Web Crypto API) ──
+async function deriveKey(token) {
+    const enc = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+        'raw', enc.encode(token), 'PBKDF2', false, ['deriveKey']
+    );
+    const salt = enc.encode('game-account-manager-salt-v1');
+    return crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+    );
+}
+
+async function encryptData(data, token) {
+    const key = await deriveKey(token);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const enc = new TextEncoder();
+    const ciphertext = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        enc.encode(data)
+    );
+    // Combine IV + ciphertext as base64
+    const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+    combined.set(iv);
+    combined.set(new Uint8Array(ciphertext), iv.length);
+    return btoa(String.fromCharCode(...combined));
+}
+
+async function decryptData(encrypted, token) {
+    const key = await deriveKey(token);
+    const combined = Uint8Array.from(atob(encrypted), c => c.charCodeAt(0));
+    const iv = combined.slice(0, 12);
+    const ciphertext = combined.slice(12);
+    const dec = new TextDecoder();
+    const plaintext = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        ciphertext
+    );
+    return dec.decode(plaintext);
+}
+
+// ── Gist API ──
+async function setupGist() {
+    const token = document.getElementById('gistToken').value.trim();
+    if (!token) { showToast('⚠️ 请输入 GitHub Personal Token'); return; }
+    if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
+        showToast('⚠️ Token 格式看起来不对，请检查');
+    }
+
+    // Save token
+    if (!gistConfig) gistConfig = {};
+    gistConfig.token = token;
+
+    const btnSetup = document.getElementById('btnGistSetup');
+    btnSetup.textContent = '⏳ 连接中...';
+    btnSetup.disabled = true;
+
+    try {
+        // Try to find existing gist, or create one
+        if (gistConfig.gistId) {
+            // Verify existing gist is accessible
+            const resp = await fetch(`https://api.github.com/gists/${gistConfig.gistId}`, {
+                headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/vnd.github+json' }
+            });
+            if (!resp.ok) throw new Error('Gist 不存在或无权限访问');
+            showToast('✅ Gist 连接成功');
+        } else {
+            // Create a new gist
+            const encrypted = await encryptData('[]', token);
+            const resp = await fetch('https://api.github.com/gists', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    description: '🎮 Game Account Manager - encrypted backup',
+                    public: false,
+                    files: { 'game-accounts.enc': { content: encrypted } }
+                })
+            });
+            if (!resp.ok) {
+                const err = await resp.json();
+                throw new Error(err.message || '创建 Gist 失败');
+            }
+            const data = await resp.json();
+            gistConfig.gistId = data.id;
+            showToast('✅ Gist 创建成功！');
+        }
+
+        gistConfig.lastSync = new Date().toLocaleString();
+        saveGistConfig();
+        updateGistUI();
+    } catch(err) {
+        showToast('❌ ' + err.message);
+        // Reset gistId if verification failed
+        if (gistConfig && !gistConfig.gistId) {
+            // keep token but reset btn
+        }
+    }
+    btnSetup.textContent = gistConfig && gistConfig.gistId ? '🔄 更新' : '🔗 创建 Gist';
+    btnSetup.disabled = false;
+}
+
+async function syncToGist() {
+    if (!gistConfig || !gistConfig.token || !gistConfig.gistId) {
+        showToast('⚠️ 请先连接 Gist');
+        return;
+    }
+    const btnPush = document.getElementById('btnGistPush');
+    btnPush.textContent = '⏳ 上传中...';
+    btnPush.disabled = true;
+
+    try {
+        const json = JSON.stringify(accounts);
+        const encrypted = await encryptData(json, gistConfig.token);
+        const resp = await fetch(`https://api.github.com/gists/${gistConfig.gistId}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${gistConfig.token}`,
+                'Accept': 'application/vnd.github+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                files: { 'game-accounts.enc': { content: encrypted } }
+            })
+        });
+        if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.message || '上传失败');
+        }
+        gistConfig.lastSync = new Date().toLocaleString();
+        saveGistConfig();
+        updateGistUI();
+        showToast('✅ 已同步到 Gist');
+    } catch(err) {
+        showToast('❌ 同步失败：' + err.message);
+    }
+    btnPush.textContent = '📤 上传';
+    btnPush.disabled = false;
+}
+
+async function loadFromGist() {
+    if (!gistConfig || !gistConfig.token || !gistConfig.gistId) {
+        showToast('⚠️ 请先连接 Gist');
+        return;
+    }
+    const btnPull = document.getElementById('btnGistPull');
+    btnPull.textContent = '⏳ 下载中...';
+    btnPull.disabled = true;
+
+    try {
+        const resp = await fetch(`https://api.github.com/gists/${gistConfig.gistId}`, {
+            headers: { 'Authorization': `Bearer ${gistConfig.token}`, 'Accept': 'application/vnd.github+json' }
+        });
+        if (!resp.ok) throw new Error('获取 Gist 失败');
+        const data = await resp.json();
+        const file = data.files && data.files['game-accounts.enc'];
+        if (!file || !file.content) throw new Error('Gist 中没有数据');
+
+        const decrypted = await decryptData(file.content, gistConfig.token);
+        const remoteAccounts = JSON.parse(decrypted);
+        if (!Array.isArray(remoteAccounts)) throw new Error('数据格式错误');
+
+        if (accounts.length > 0 && !confirm(`云端有 ${remoteAccounts.length} 条记录，本地有 ${accounts.length} 条。\n\n确定用云端数据覆盖本地吗？`)) {
+            btnPull.textContent = '📥 下载';
+            btnPull.disabled = false;
+            return;
+        }
+
+        accounts = remoteAccounts;
+        saveData();
+        renderAccounts();
+        gistConfig.lastSync = new Date().toLocaleString();
+        saveGistConfig();
+        updateGistUI();
+        showToast(`📥 已从 Gist 加载 ${remoteAccounts.length} 条记录`);
+    } catch(err) {
+        showToast('❌ 加载失败：' + err.message);
+    }
+    btnPull.textContent = '📥 下载';
+    btnPull.disabled = false;
+}
+
+// ── Toast ──
+function showToast(msg) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.25s';
+        setTimeout(() => toast.remove(), 250);
+    }, 1800);
+}
+
+// ── Keyboard shortcuts ──
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        document.getElementById('searchInput').focus();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        openModal();
+    }
+});
+
+// ── Init ──
+loadData();
+loadGistConfig();
+renderAccounts();
+</script>
+</body>
+</html>
